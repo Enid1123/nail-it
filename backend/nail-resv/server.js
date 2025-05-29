@@ -6,6 +6,9 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const cors = require('cors');
+app.use(cors());
+
 // init Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -24,12 +27,12 @@ app.use((req, res, next) => {
 const { router: availabilityRouter } = require('./routes/availability');
 const reservationRouter              = require('./routes/reservation');
 const searchRouter = require('./routes/search');
-const tagImagesRouter = require('./routes/tagImages');
+//const tagImagesRouter = require('./routes/tagImages'); 
 
 app.use('/api/technicians', availabilityRouter);
 app.use('/api/reservations', reservationRouter);
 app.use('/api', searchRouter);
-app.use('/api', tagImagesRouter);
+//app.use('/api', tagImagesRouter);
 
 app.get('/', (req, res) => res.send('Nail-Resv API'));
 

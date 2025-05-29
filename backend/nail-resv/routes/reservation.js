@@ -5,6 +5,7 @@ const router  = express.Router();
 // POST /api/reservations/book
 // Body: { username, studio, date, time, note }
 router.post('/book', async (req, res, next) => {
+  console.log('收到預約請求', req.body);
   try {
     const { username, studio, date, time, note } = req.body;
     if (![username, studio, date, time].every(Boolean)) {
@@ -31,6 +32,15 @@ router.post('/book', async (req, res, next) => {
     const resp = await fetch(
       `http://localhost:${process.env.PORT || 3000}/api/technicians/${studio}/slots?date=${date}`
     );
+
+    // 新增這段
+    if (!resp.ok) {
+    const text = await resp.text();
+    console.error('獲取 availableSlots 失敗，狀態碼:', resp.status, '內容:', text);
+    return res.status(500).json({ error: 'Failed to fetch available slots.' });
+    }
+
+
     const { availableSlots, error } = await resp.json();
     if (error) throw new Error(error);
     if (!availableSlots.includes(time)) {

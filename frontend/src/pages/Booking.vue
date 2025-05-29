@@ -258,7 +258,8 @@ const hasAvailableSchedule = computed(() => {
   )
 })
 
-// 根據選擇的日期更新可用時段
+// 根據選擇的日期更新可用時段(模擬)
+/*
 const updateTimeSlotAvailability = (dateString) => {
   const dateObj = new Date(dateString)
   const dayOfWeek = dateObj.getDay()
@@ -287,8 +288,31 @@ const updateTimeSlotAvailability = (dateString) => {
     availableTimeSlots.value = []
   }
 }
+*/
+
+//串api
+const updateTimeSlotAvailability = async (dateString) => {
+  const dateObj = new Date(dateString);
+  const dayOfWeek = dateObj.getDay();
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayName = dayNames[dayOfWeek];
+  const daySchedule = props.weeklySchedule[dayName];
+
+  if (daySchedule && daySchedule.isOpen && daySchedule.timeSlots.length > 0) {
+    const occupiedSlots = await getOccupiedSlots(dateString);
+
+    availableTimeSlots.value = daySchedule.timeSlots.map(slot => ({
+      time: slot,
+      available: !occupiedSlots.includes(slot)
+    }));
+  } else {
+    availableTimeSlots.value = [];
+  }
+};
+
 
 // 獲取已預約時段的函數（模擬）
+/*
 const getOccupiedSlots = (dateString) => {
   // 這裡應該從後端 API 獲取已預約的時段
   // 目前用模擬資料
@@ -308,6 +332,30 @@ const getOccupiedSlots = (dateString) => {
   
   return occupied[dateString] || []
 }
+*/
+
+// 串api
+const getOccupiedSlots = async (dateString) => {
+  try {
+    const res = await fetch(`/api/technicians/${artistName.value}/slots?date=${dateString}`);
+    const data = await res.json();
+    const available = data.availableSlots;
+
+    // 找出美甲師當日所有時段（from weeklySchedule）
+    const dateObj = new Date(dateString);
+    const dayOfWeek = dateObj.getDay(); // 0 = Sunday
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[dayOfWeek];
+    const allSlots = props.weeklySchedule[dayName]?.timeSlots || [];
+
+    // 哪些 slots 沒有出現在 availableSlots 就是已被預約
+    return allSlots.filter(slot => !available.includes(slot));
+  } catch (err) {
+    console.error('載入可預約時段失敗:', err);
+    return [];
+  }
+};
+
 
 // 選擇日期
 const selectDate = (dateString) => {
@@ -347,12 +395,49 @@ onMounted(() => {
   currentDate.value = new Date()
 })
 
+/*
 const submitBooking = () => {
   if (selectedDate.value && selectedTime.value) {
     // 顯示預約成功提示
     showSuccess.value = true
   }
 }
+*/
+
+const submitBooking = async () => {
+  if (!selectedDate.value || !selectedTime.value) return;
+
+  try {
+    const res = await fetch('/api/reservations/book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'demo_user',                // ❗之後請換成登入者的 username
+        studio: artistName.value,             // e.g., 'waka.nail'
+        date: selectedDate.value,             // e.g., '2025-06-01'
+        time: selectedTime.value,             // e.g., '10:00-12:00'
+        note: notes.value || ''
+      })
+    });
+
+    if (!res.ok) {
+      let errText = '預約失敗';
+      try {
+        const errData = await res.json();
+        errText = errData.error || errText;
+      } catch (_) {
+    // 如果不是 JSON 格式，直接使用預設錯誤訊息
+    }
+      throw new Error(errText);
+    }
+
+    showSuccess.value = true;
+  } catch (err) {
+    console.error('預約送出失敗:', err.message);
+    alert(`預約失敗：${err.message}`);
+  }
+};
+
 
 const finishBooking = () => {
   // 關閉成功提示並通知關閉彈窗/側邊欄
