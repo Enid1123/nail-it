@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # 設置環境變數
-ENV VITE_BACKEND_API_URL=http://localhost:4000
+ENV VITE_BACKEND_API_URL=/api
 
 # 暴露 5173 端口 (Vite 預設開發端口)
 EXPOSE 5173

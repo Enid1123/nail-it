@@ -366,7 +366,6 @@ router.put('/:appointmentId/status', async (req, res) => {
 });
 
 // GET /api/reservations/artist/:artistId/manage
-
 router.get('/artist/:artistId/manage', async (req, res) => {
   console.log('🔍 API 被呼叫，artistId:', req.params.artistId);
   try {

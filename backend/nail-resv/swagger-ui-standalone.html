@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美甲標註 API 文檔</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin:0;
+            background: #fafafa;
+        }
+        .swagger-ui .topbar {
+            background-color: #ff6b9d;
+        }
+        .swagger-ui .topbar .download-url-wrapper .select-label {
+            color: white;
+        }
+        .swagger-ui .topbar .download-url-wrapper input[type=text] {
+            border: 2px solid #ff6b9d;
+        }
+        .swagger-ui .info .title {
+            color: #ff6b9d;
+        }
+        .swagger-ui .info h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ff6b9d;
+            margin-bottom: 0.5em;
+        }
+        .swagger-ui .info p {
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        .swagger-ui .scheme-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .swagger-ui .opblock.opblock-post {
+            border-color: #ff6b9d;
+        }
+        .swagger-ui .opblock.opblock-post .opblock-summary {
+            border-color: #ff6b9d;
+        }
+        .swagger-ui .opblock.opblock-post .tab-header .tab-item.active h4 span {
+            background: #ff6b9d;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            // OpenAPI 規格內嵌到 JavaScript 中，避免 CORS 問題
+            const openApiSpec = {
+                "openapi": "3.0.3",
+                "info": {
+                    "title": "美甲標註 API",
+                    "description": "美甲圖片自動標註服務，使用 AI 技術分析美甲圖片並自動標註風格、形狀、顏色、質感、裝飾和主題等屬性。\n\n## 功能特色\n- 支援批量上傳圖片（最多10張）\n- 使用 GPT-4o 模型進行智能標註\n- 自動上傳至 Supabase Storage\n- 結果儲存至資料庫\n\n## 標註類別\n- **風格**: 漸層、跳色、貓眼、單色、法式、手繪、鏡面\n- **形狀**: 方形、圓形、橢圓形、方圓形、尖形\n- **顏色**: 紅色、橙色、黃色、綠色、藍色、靛色、紫色、黑色、白色、灰色、粉色、金屬銀、裸粉色\n- **質感**: 光澤、霧面、亮片、珠光、砂糖感、金屬箔、絲絨\n- **裝飾**: 水鑽、雕花、金屬飾片、貝殼、貼紙、畫圖章\n- **主題**: 日常、春、夏、秋、冬、韓系、日系、歐美風、簡約、可愛、優雅、繽紛",
+                    "version": "1.0.0",
+                    "contact": {
+                        "name": "美甲標註 API 支援",
+                        "email": "support@nailit.com"
+                    },
+                    "license": {
+                        "name": "MIT",
+                        "url": "https://opensource.org/licenses/MIT"
+                    }
+                },
+                "servers": [
+                    {
+                        "url": "http://localhost:4000/api",
+                        "description": "開發環境"
+                    },
+                    {
+                        "url": "https://api.nailit.com/api",
+                        "description": "生產環境"
+                    }
+                ],
+                "paths": {
+                    "/tag": {
+                        "post": {
+                            "tags": ["美甲標註"],
+                            "summary": "批量標註美甲圖片",
+                            "description": "上傳美甲圖片並使用 AI 進行自動標註。支援同時上傳最多 10 張圖片，系統會自動分析每張圖片的風格、形狀、顏色、質感、裝飾和主題等屬性。",
+                            "operationId": "tagNailImages",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "multipart/form-data": {
+                                        "schema": {
+                                            "type": "object",
+                                            "required": ["images", "placeId"],
+                                            "properties": {
+                                                "images": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "format": "binary"
+                                                    },
+                                                    "minItems": 1,
+                                                    "maxItems": 10,
+                                                    "description": "美甲圖片文件（支援 JPG, JPEG, PNG 格式，最多 10 張）"
+                                                },
+                                                "placeId": {
+                                                    "type": "string",
+                                                    "description": "美甲店的 Google Places ID",
+                                                    "example": "ChIJN1t_tDeuEmsRUsoyG83frY4"
+                                                }
+                                            }
+                                        },
+                                        "encoding": {
+                                            "images": {
+                                                "contentType": "image/jpeg, image/png, image/jpg"
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "標註處理成功",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/TagResponse"
+                                            },
+                                            "example": {
+                                                "message": "處理完成！成功: 3 張，失敗: 0 張",
+                                                "successful": [
+                                                    {
+                                                        "originalName": "nail1.jpg",
+                                                        "filename": "photo_placeid-ChIJN1t_tDeuEmsRUsoyG83frY4_idx-1_1703123456789.jpg",
+                                                        "imageUrl": "https://example.supabase.co/storage/v1/object/public/nailimg/allimgs/photo_placeid-ChIJN1t_tDeuEmsRUsoyG83frY4_idx-1_1703123456789.jpg",
+                                                        "tags": {
+                                                            "style": ["漸層", "手繪"],
+                                                            "shape": ["方圓形"],
+                                                            "color": ["粉色", "白色"],
+                                                            "texture": ["光澤"],
+                                                            "decorations": ["水鑽"],
+                                                            "theme": ["優雅", "日常"]
+                                                        },
+                                                        "nailImagesSaved": true
+                                                    }
+                                                ],
+                                                "failed": [],
+                                                "totalInAllResults": 125
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "請求參數錯誤",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse"
+                                            },
+                                            "examples": {
+                                                "noImages": {
+                                                    "summary": "未上傳圖片",
+                                                    "value": {
+                                                        "error": "請上傳最多 10 張圖片（field: images）"
+                                                    }
+                                                },
+                                                "noPlaceId": {
+                                                    "summary": "缺少美甲店 ID",
+                                                    "value": {
+                                                        "error": "請提供 placeId（美甲店的 Google Places ID）"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "伺服器內部錯誤",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse"
+                                            },
+                                            "examples": {
+                                                "fileError": {
+                                                    "summary": "檔案處理錯誤",
+                                                    "value": {
+                                                        "error": "Server 讀檔錯誤",
+                                                        "detail": "ENOENT: no such file or directory"
+                                                    }
+                                                },
+                                                "aiError": {
+                                                    "summary": "AI 服務錯誤",
+                                                    "value": {
+                                                        "error": "AI 標註服務暫時無法使用"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "components": {
+                    "schemas": {
+                        "TagResponse": {
+                            "type": "object",
+                            "required": ["message", "successful", "failed", "totalInAllResults"],
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "處理結果摘要訊息",
+                                    "example": "處理完成！成功: 3 張，失敗: 0 張"
+                                },
+                                "successful": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SuccessfulImage"
+                                    },
+                                    "description": "成功處理的圖片列表"
+                                },
+                                "failed": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FailedImage"
+                                    },
+                                    "description": "處理失敗的圖片列表"
+                                },
+                                "totalInAllResults": {
+                                    "type": "integer",
+                                    "description": "總共標註過的圖片數量",
+                                    "example": 125
+                                }
+                            }
+                        },
+                        "SuccessfulImage": {
+                            "type": "object",
+                            "required": ["originalName", "filename", "imageUrl", "tags", "nailImagesSaved"],
+                            "properties": {
+                                "originalName": {
+                                    "type": "string",
+                                    "description": "原始檔案名稱",
+                                    "example": "nail_design_1.jpg"
+                                },
+                                "filename": {
+                                    "type": "string",
+                                    "description": "系統生成的唯一檔案名稱",
+                                    "example": "photo_placeid-ChIJN1t_tDeuEmsRUsoyG83frY4_idx-1_1703123456789.jpg"
+                                },
+                                "imageUrl": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "description": "圖片的公開存取 URL",
+                                    "example": "https://example.supabase.co/storage/v1/object/public/nailimg/allimgs/photo_placeid-ChIJN1t_tDeuEmsRUsoyG83frY4_idx-1_1703123456789.jpg"
+                                },
+                                "tags": {
+                                    "$ref": "#/components/schemas/NailTags"
+                                },
+                                "nailImagesSaved": {
+                                    "type": "boolean",
+                                    "description": "是否已成功儲存至資料庫",
+                                    "example": true
+                                }
+                            }
+                        },
+                        "FailedImage": {
+                            "type": "object",
+                            "required": ["originalName", "error"],
+                            "properties": {
+                                "originalName": {
+                                    "type": "string",
+                                    "description": "原始檔案名稱",
+                                    "example": "corrupted_image.jpg"
+                                },
+                                "error": {
+                                    "type": "string",
+                                    "description": "失敗原因",
+                                    "example": "AI 標註失敗"
+                                }
+                            }
+                        },
+                        "NailTags": {
+                            "type": "object",
+                            "properties": {
+                                "style": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["漸層", "跳色", "貓眼", "單色", "法式", "手繪", "鏡面"]
+                                    },
+                                    "description": "美甲風格",
+                                    "example": ["漸層", "手繪"]
+                                },
+                                "shape": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["方形（Square）", "圓形（Round）", "橢圓形（Oval）", "方圓形（Squoval）", "尖形（Stiletto）"]
+                                    },
+                                    "description": "指甲形狀",
+                                    "example": ["方圓形"]
+                                },
+                                "color": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["紅色", "橙色", "黃色", "綠色", "藍色", "靛色", "紫色", "黑色", "白色", "灰色", "粉色", "金屬銀", "裸粉色"]
+                                    },
+                                    "description": "顏色",
+                                    "example": ["粉色", "白色"]
+                                },
+                                "texture": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["光澤（Glossy）", "霧面（Matte）", "亮片（Glitter）", "珠光（Pearlescent）", "砂糖感（Sugar）", "金屬箔（Foil）", "絲絨（Velvet）"]
+                                    },
+                                    "description": "質感",
+                                    "example": ["光澤"]
+                                },
+                                "decorations": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["水鑽（Rhinestone）", "雕花（3D art）", "金屬飾片（Metal pieces）", "貝殼（Shell）", "貼紙（Sticker）", "畫圖章（Stamp）"]
+                                    },
+                                    "description": "裝飾元素",
+                                    "example": ["水鑽"]
+                                },
+                                "theme": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["日常", "春", "夏", "秋", "冬", "韓系", "日系", "歐美風", "簡約", "可愛", "優雅", "繽紛"]
+                                    },
+                                    "description": "主題風格",
+                                    "example": ["優雅", "日常"]
+                                }
+                            }
+                        },
+                        "ErrorResponse": {
+                            "type": "object",
+                            "required": ["error"],
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "description": "錯誤訊息",
+                                    "example": "請上傳最多 10 張圖片（field: images）"
+                                },
+                                "detail": {
+                                    "type": "string",
+                                    "description": "詳細錯誤資訊",
+                                    "example": "ENOENT: no such file or directory"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    {
+                        "name": "美甲標註",
+                        "description": "美甲圖片 AI 標註相關操作"
+                    }
+                ],
+                "externalDocs": {
+                    "description": "專案 GitHub Repository",
+                    "url": "https://github.com/your-org/nail-it"
+                }
+            };
+
+            // 初始化 Swagger UI
+            const ui = SwaggerUIBundle({
+                spec: openApiSpec, // 直接使用內嵌的規格
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                tryItOutEnabled: true,
+                requestInterceptor: function(request) {
+                    console.log('Request:', request);
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    console.log('Response:', response);
+                    return response;
+                },
+                onComplete: function() {
+                    console.log('Swagger UI 載入完成');
+                },
+                validatorUrl: null,
+                docExpansion: 'list',
+                defaultModelExpandDepth: 3,
+                defaultModelsExpandDepth: 1,
+                displayRequestDuration: true,
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
+            });
+        };
+    </script>
+</body>
+</html> 

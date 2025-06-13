@@ -1,0 +1,10 @@
+# Python dependencies for image_search.py
+numpy
+opencv-python
+Pillow
+supabase
+faiss-cpu
+torch
+torchvision
+timm
+ultralytics

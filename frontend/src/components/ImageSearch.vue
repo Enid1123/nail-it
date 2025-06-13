@@ -38,7 +38,8 @@
       </svg>
       <span class="ml-2 text-[#c68f84]">正在搜尋類似作品...</span>
     </div>
-
+    <div v-if="errorMsg" class="text-red-600 mt-2">{{ errorMsg }}</div>
+    
     <!-- 搜尋結果區 -->
     <div v-if="uploadedImage && similarWorks.length">
       <div class="flex items-center mt-6 mb-7">
@@ -46,11 +47,11 @@
     <img src="../assets/flower.png" alt="Flower" class="w-10 h-auto" /> 
   </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        <div 
-          v-for="work in similarWorks" 
-          :key="work.id" 
-          class="bg-white p-4 rounded-xl shadow hover:shadow-lg cursor-pointer" 
-          @click="goToProfile(work.id)"
+        <div
+          v-for="work in similarWorks"
+          :key="work.id"
+          class="bg-white p-4 rounded-xl shadow hover:shadow-lg cursor-pointer"
+          @click="goToProfile(work.artistId)"
         >
           <img :src="work.image" class="w-full h-48 object-cover rounded-md mb-3" />
           <div class="flex items-center justify-between mb-1">
@@ -85,26 +86,29 @@ const uploadedFile = ref(null)        // 暫存原始 file
 const uploadedImage = ref(null)       // 圖片預覽
 const similarWorks = ref([])          // 類似作品結果
 const isLoading = ref(false)
+const errorMsg = ref('')               // 錯誤訊息
 
 const resetUpload = () => {
   uploadedFile.value = null
   uploadedImage.value = null
   similarWorks.value = []
   isLoading.value = false
+  errorMsg.value = ''
 }
 
 const router = useRouter()
 
 // 跳轉到 profile 頁面
-const goToProfile = (designId) => {
-  // 使用 designId 作為參數來進入 profile 頁面
-  router.push(`/profile/${designId}`)
+const goToProfile = (artistId) => {
+  if (!artistId) {
+    console.warn('⚠️ 無法跳轉：沒有 artistId')
+    return
+  }
+  router.push(`/profile/${artistId}`)
 }
 
 
-import design1 from '../assets/temp/design1.jpg'
-import design2 from '../assets/temp/design2.jpg'
-import design3 from '../assets/temp/design3.jpg'
+import { API_BASE_URL } from '../config/api.js'
 
 // const sortedDesign = computed(() => {
 //   return [...design].sort((a, b) => b.rating - a.rating)
@@ -117,50 +121,46 @@ const handleUpload = (e) => {
     uploadedFile.value = file
     uploadedImage.value = URL.createObjectURL(file)
     similarWorks.value = []         // 清空結果
+    errorMsg.value = ''
   }
 }
 
-const searchSimilar  = () => {
-  
+const searchSimilar  = async () => {
   if (!uploadedFile.value) return
 
   isLoading.value = true
-  
-  // 模擬後端分析圖片花2秒
-  setTimeout(() => {
-    isLoading.value = false  // 結束 loading
-  
-    // 假資料
-    similarWorks.value = [
-      { 
-        id: '1', 
-        studio: '@waka.nail', 
-        rating: 4.9, 
-        priceLow: 1000 , priceHigh: 1800,
-        tags: ['貓眼', '清新', '日系', '綠色系'], 
-        image: design1 },
-      { 
-        id: '2', 
-        studio: '@jolieee_nail', 
-        rating: 4.7, 
-        priceLow: 1000 , priceHigh: 1500, 
-        tags: ['貓眼', '清新', '藍色系'],
-        image: design2 },
-      { 
-        id: '3', 
-        studio: '@61.nail', 
-        rating: 4.6, 
-        priceLow: 1200 , priceHigh: 1500, 
-        tags: ['貓眼', '清新', '可愛','粉色系'],
-        image: design3 },
-      { 
-        id: '4', 
-        studio: '@test.nail', 
-        rating: 4.5, 
-        priceLow: 900 , priceHigh: 1600, 
-        tags: ['簡約', '清新'],
-        image: design1 },
-    ]
-  }, 2000)
+  try {
+    // 轉成 base64 字串
+    const base64 = await new Promise(resolve => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.readAsDataURL(uploadedFile.value)
+    })
+
+    const resp = await fetch(`${API_BASE_URL}/search-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData: base64 })
+    })
+
+    const data = await resp.json()
+    if (resp.ok && data.success) {
+      similarWorks.value = Array.isArray(data.results) ? data.results : []
+      errorMsg.value = ''
+    } else if (data && data.error === 'no nails detected') {
+      resetUpload()
+      errorMsg.value = '❗ 請上傳含有指甲的照片'
+      similarWorks.value = []
+    } else {
+      console.error('search-image failed', data.error)
+      similarWorks.value = []
+      errorMsg.value = '搜尋失敗'
+    }
+  } catch (err) {
+    console.error('search-image error', err)
+    similarWorks.value = []
+    errorMsg.value = '搜尋失敗'
+  }
+  isLoading.value = false
 }
 </script>

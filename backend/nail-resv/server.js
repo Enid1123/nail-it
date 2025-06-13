@@ -16,18 +16,9 @@ const supabase = createClient(
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// CORS 設定
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// CORS 設定 (開發環境允許多個 LAN 位址)
+const corsDev = require('./middleware/cors-dev');
+app.use(corsDev);
 
 // inject supabase client into req
 app.use((req, res, next) => {
@@ -41,18 +32,23 @@ const { router: reservationRouter } = require('./routes/reservation');
 const searchRouter = require('./routes/search');
 const searchSupabaseRouter = require('./routes/searchWithSupabase');
 const tagImagesRouter = require('./routes/tagImages');
+
+const searchImageRouter = require('./routes/searchImage');
 const { router: registerRouter } = require('./routes/register');
 const loginRoute = require('./routes/login');
 const logoutRoute = require('./routes/logout'); 
 const customersRouter = require('./routes/customers');
 const artistsRouter = require('./routes/artists');
 const worksRouter = require('./routes/works');
+
 app.use('/api/reviews', require('./routes/reviews').router)
 app.use('/api/reservations', reservationRouter);
 app.use('/api/technicians', availabilityRouter);
 app.use('/api', searchRouter);
 app.use('/api', searchSupabaseRouter);
 app.use('/api', tagImagesRouter);
+app.use('/api', searchImageRouter);
+
 app.use('/api/register', registerRouter);
 app.use('/api/login', loginRoute);
 app.use('/api/logout', logoutRoute);  

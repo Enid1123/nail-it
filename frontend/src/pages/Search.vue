@@ -151,8 +151,7 @@ import { useRouter } from 'vue-router'
 import ImageSearch from '../components/ImageSearch.vue'
 import FilterSearch from '../components/FilterSearch.vue'
 import { useLogout } from '../auth.js'
-
-const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL
+import { API_BASE_URL } from '../config/api.js'
 
 const { handleLogout } = useLogout()
 

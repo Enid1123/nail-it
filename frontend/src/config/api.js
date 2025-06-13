@@ -1,7 +1,7 @@
 // src/config/api.js
 // 根據環境變數設定 API base URL
-const API_BASE = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:4000'
-export const API_BASE_URL = `${API_BASE}/api`
+const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '/api'
+export const API_BASE_URL = API_BASE
 
 // 通用的 API 請求函數
 export const apiRequest = async (endpoint, options = {}) => {

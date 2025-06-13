@@ -10,8 +10,16 @@ COPY nail-resv/package*.json ./
 # 安裝依賴
 RUN npm install
 
+# install Python for image search utilities
+RUN apk add --no-cache python3 py3-pip
+COPY python/requirements.txt ./python/requirements.txt
+RUN pip3 install --break-system-packages --no-cache-dir -r python/requirements.txt
+
+
 # 複製專案文件
 COPY nail-resv/ ./
+COPY python/ ./python/
+COPY models/ ./models/
 
 # 設置環境變數
 ENV PORT=4000
@@ -24,3 +32,4 @@ EXPOSE 4000
 
 # 啟動命令
 CMD ["node", "server.js"]
+

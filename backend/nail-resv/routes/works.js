@@ -1,6 +1,9 @@
 // backend/nail-resv/routes/works.js
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
 
 // 獲取美甲師的所有作品
 router.get('/artist/:artistId', async (req, res) => {
@@ -245,6 +248,31 @@ router.post('/artist/:artistId', async (req, res) => {
           ...processedTags.theme
         ].filter(tag => tag)
       };
+      // invoke feature extraction
+      const tmpDir = path.join(__dirname, "../tmp");
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      const tmpPath = path.join(tmpDir, filename);
+      fs.writeFileSync(tmpPath, buffer);
+      const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+      const py = spawn(pythonCmd, [
+        path.join(__dirname, "../../python/image_search.py"),
+        "extract",
+        tmpPath,
+        String(data.id),
+        "--supabase-url",
+        process.env.SUPABASE_URL,
+        "--supabase-key",
+        process.env.SUPABASE_SERVICE_KEY,
+      ], {
+        env: { ...process.env, KMP_DUPLICATE_LIB_OK: 'TRUE' }
+      });
+
+      py.on("close", () => fs.unlink(tmpPath, () => {}));
+      py.on("error", (err) => {
+        console.error('Python error:', err);
+      });
   
       res.json({
         success: true,

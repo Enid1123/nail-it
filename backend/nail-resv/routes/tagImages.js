@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -175,7 +176,8 @@ async function saveToNailImages(placeId, imageUrl, tags, filename) {
 
     const { data, error } = await supabase
       .from('nail_images')
-      .insert([{
+      .insert([
+      {
         artist_id: artistId,
         place_id: placeId,
         filename: filename,
@@ -187,18 +189,22 @@ async function saveToNailImages(placeId, imageUrl, tags, filename) {
         decorations: tags.decorations || [],
         theme: tags.theme || [],
         created_at: new Date().toISOString()
-      }]);
+      }
+    ])
+      .select()
+      .single();
+    
 
     if (error) {
       console.error('儲存到 nail_images 表失敗:', error);
-      return false;
+      return null;
     }
 
     console.log(`✅ 成功儲存 ${filename} 到 nail_images 表 (artist: ${artistId})`);
-    return true;
+    return data.id;
   } catch (error) {
     console.error('儲存到 nail_images 表發生錯誤:', error);
-    return false;
+    return null;
   }
 }
 
@@ -300,7 +306,19 @@ router.post('/tag', upload.array('images', 10), async (req, res) => {
       }
 
       // 儲存到 nail_images 表
-      const nailImagesSaved = await saveToNailImages(placeId, imageUrl, tags, filename);
+      const imageId = await saveToNailImages(placeId, imageUrl, tags, filename);
+
+      if (imageId) {
+        const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+        spawnSync(pythonCmd, [
+          path.join(__dirname, '../../python/image_search.py'),
+          'extract',
+          file.path,
+          String(imageId),
+          '--supabase-url', process.env.SUPABASE_URL,
+          '--supabase-key', process.env.SUPABASE_SERVICE_KEY
+        ], { env: { ...process.env, KMP_DUPLICATE_LIB_OK: 'TRUE' } });
+      }
 
       // 清理臨時檔案
       fs.unlinkSync(file.path);
@@ -311,7 +329,7 @@ router.post('/tag', upload.array('images', 10), async (req, res) => {
         imageUrl: imageUrl,
         tags: tags,
         success: true,
-        nailImagesSaved: nailImagesSaved
+        nailImagesSaved: Boolean(imageId)
       };
 
     } catch (error) {
