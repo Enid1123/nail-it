@@ -3,7 +3,7 @@ openapi: 3.0.3
 info:
   title: 美甲預約系統完整 API
   description: |
-    完整的美甲預約系統 API，包含用戶註冊登入、美甲師管理、預約系統、圖片標註和搜尋功能。
+    完整的美甲預約系統 API，包含用戶註冊登入、美甲師管理、預約系統、圖片標註、搜尋和以圖搜圖功能。
     
     ## 主要功能
     - 🔐 用戶註冊登入系統
@@ -11,7 +11,15 @@ info:
     - 📅 預約和時段管理
     - 🎨 美甲圖片 AI 標註
     - 🔍 智能搜尋和篩選
+    - 🖼️ AI 以圖搜圖功能
     - ⏰ 美甲師營業時間設定
+    
+    ## 🆕 以圖搜圖功能
+    - 上傳美甲圖片，AI 自動分析圖片特徵
+    - 識別美甲風格、顏色、質感、主題、裝飾等屬性
+    - 搜尋資料庫中相似的美甲作品
+    - 計算相似度分數並排序結果
+    - 提供美甲師資訊和作品詳情
   version: 1.0.0
   contact:
     name: 美甲預約系統 API 支援
@@ -635,6 +643,239 @@ paths:
               schema:
                 $ref: '#/components/schemas/SearchResponse'
 
+  /search-by-artist/{artistId}:
+    get:
+      tags: [搜尋]
+      summary: 根據美甲師ID搜尋作品
+      description: 獲取指定美甲師的所有美甲作品
+      operationId: searchByArtist
+      parameters:
+        - name: artistId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 美甲師的用戶ID
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: 返回結果數量限制
+      responses:
+        '200':
+          description: 搜尋成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        artistId:
+                          type: string
+                        imageUrl:
+                          type: string
+                        description:
+                          type: string
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        nailAttributes:
+                          $ref: '#/components/schemas/NailTags'
+        '500':
+          description: 伺服器錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /random:
+    get:
+      tags: [搜尋]
+      summary: 獲取隨機美甲作品
+      description: 隨機獲取美甲作品，用於推薦展示
+      operationId: getRandomNailArt
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: 返回結果數量限制
+      responses:
+        '200':
+          description: 獲取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '500':
+          description: 伺服器錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /search-artists:
+    get:
+      tags: [搜尋]
+      summary: 搜尋美甲師
+      description: 根據多種條件搜尋美甲師，支援工作室名稱、城市、區域、價格範圍、評分等篩選
+      operationId: searchArtists
+      parameters:
+        - name: artistname
+          in: query
+          schema:
+            type: string
+          description: 美甲師名稱搜尋
+        - name: studioName
+          in: query
+          schema:
+            type: string
+          description: 工作室名稱搜尋
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: 美甲師/工作室名稱搜尋
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: 城市篩選
+        - name: district
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+            style: form
+            explode: false
+          description: 區域篩選
+        - name: priceMin
+          in: query
+          schema:
+            type: number
+          description: 最低價格篩選
+        - name: priceMax
+          in: query
+          schema:
+            type: number
+          description: 最高價格篩選
+        - name: rating
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 5
+          description: 最低評分篩選
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: 返回結果數量限制
+      responses:
+        '200':
+          description: 搜尋成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Artist'
+                  filters:
+                    type: object
+                    description: 使用的篩選條件
+        '500':
+          description: 伺服器錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ========== 以圖搜圖 API ==========
+  /search-by-image:
+    post:
+      tags: [以圖搜圖]
+      summary: 以圖搜圖美甲作品
+      description: |
+        上傳美甲圖片，使用 AI 分析圖片內容並搜尋相似的美甲作品。
+        系統會自動識別圖片中的美甲風格、顏色、質感等特徵，
+        然後返回相似度最高的作品列表，並按相似度排序。
+      operationId: searchByImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: 美甲圖片文件（支援 JPG, JPEG, PNG 格式）
+            encoding:
+              image:
+                contentType: image/jpeg, image/png, image/jpg
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: 返回結果數量限制
+      responses:
+        '200':
+          description: 搜尋成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageSearchResponse'
+        '400':
+          description: 請求參數錯誤（如：未上傳圖片）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 圖片分析失敗或伺服器錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     # ========== 認證相關 Schema ==========
@@ -1255,6 +1496,78 @@ components:
             rating:
               type: number
 
+    # ========== 以圖搜圖 Schema ==========
+    ImageSearchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 是否搜尋成功
+        count:
+          type: integer
+          description: 搜尋結果數量
+        analyzedTags:
+          $ref: '#/components/schemas/NailTags'
+          description: AI 分析上傳圖片得出的標籤
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageSearchResult'
+          description: 搜尋結果列表，按相似度排序
+
+    ImageSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 圖片ID
+        filename:
+          type: string
+          description: 圖片檔案名稱
+        imageUrl:
+          type: string
+          description: 圖片URL
+        placeId:
+          type: string
+          description: 美甲店的 Google Places ID
+        createdAt:
+          type: string
+          format: date-time
+          description: 圖片創建時間
+        similarity:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 與上傳圖片的相似度分數 (0-1)
+        nailAttributes:
+          $ref: '#/components/schemas/NailTags'
+          description: 美甲屬性標籤
+        artist:
+          type: object
+          description: 美甲師資訊
+          properties:
+            userId:
+              type: string
+              description: 美甲師用戶ID
+            studioName:
+              type: string
+              description: 工作室名稱
+            city:
+              type: string
+              description: 所在城市
+            district:
+              type: string
+              description: 所在區域
+            priceMin:
+              type: number
+              description: 最低價格
+            priceMax:
+              type: number
+              description: 最高價格
+            rating:
+              type: number
+              description: 評分
+
     # ========== 通用 Schema ==========
     ErrorResponse:
       type: object
@@ -1285,6 +1598,8 @@ tags:
     description: 美甲圖片 AI 標註相關操作
   - name: 搜尋
     description: 美甲作品智能搜尋和篩選
+  - name: 以圖搜圖
+    description: 上傳美甲圖片，AI 自動分析並搜尋相似作品
 
 externalDocs:
   description: 專案 GitHub Repository

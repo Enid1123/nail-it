@@ -51,9 +51,9 @@
 <body>
     <div class="header-note">
         <h2>💅 美甲預約系統完整 API 文檔 <span class="update-badge">✨ 已更新</span></h2>
-        <p>包含認證、用戶管理、預約管理、AI 標註、搜尋等所有功能</p>
-        <p><small>🚀 離線版本，無需伺服器運行</small></p>
-        <p><small>🆕 新增功能：Base64 圖片標註 API (/tag-base64)</small></p>
+        <p>包含認證、用戶管理、預約管理、AI 標註、搜尋、以圖搜圖等所有功能</p>
+        <p><small>🚀 支援離線查看，無需伺服器運行</small></p>
+        <p><small>🆕 新增功能：以圖搜圖 API (/search-by-image) - 上傳圖片搜尋相似美甲作品</small></p>
     </div>
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
@@ -65,7 +65,7 @@
                 "openapi": "3.0.3",
                 "info": {
                     "title": "美甲預約系統完整 API",
-                    "description": "完整的美甲預約系統 API，包含用戶註冊登入、美甲師管理、預約系統、圖片標註和搜尋功能。\n\n## 主要功能\n- 🔐 用戶註冊登入系統\n- 👤 顧客和美甲師資料管理\n- 📅 預約和時段管理\n- 🎨 美甲圖片 AI 標註\n- 🔍 智能搜尋和篩選\n- ⏰ 美甲師營業時間設定\n\n## 新增功能\n- 🆕 Base64 圖片標註 API (/tag-base64)",
+                    "description": "完整的美甲預約系統 API，包含用戶註冊登入、美甲師管理、預約系統、圖片標註、搜尋和以圖搜圖功能。\n\n## 主要功能\n- 🔐 用戶註冊登入系統\n- 👤 顧客和美甲師資料管理\n- 📅 預約和時段管理\n- 🎨 美甲圖片 AI 標註\n- 🔍 智能搜尋和篩選\n- 🖼️ 以圖搜圖功能\n- ⏰ 美甲師營業時間設定\n\n## 🆕 新增功能\n- **以圖搜圖 API** (/search-by-image): 上傳美甲圖片，AI 自動分析並搜尋相似作品",
                     "version": "1.0.0",
                     "contact": {
                         "name": "美甲預約系統 API 支援",
@@ -456,6 +456,160 @@
                             ],
                             "responses": {"200": {"description": "搜尋成功"}}
                         }
+                    },
+                    "/search-by-artist/{artistId}": {
+                        "get": {
+                            "tags": ["搜尋"],
+                            "summary": "根據美甲師ID搜尋作品",
+                            "description": "獲取指定美甲師的所有美甲作品",
+                            "parameters": [
+                                {"name": "artistId", "in": "path", "required": true, "schema": {"type": "string"}, "description": "美甲師的用戶ID"},
+                                {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}, "description": "返回結果數量限制"}
+                            ],
+                            "responses": {
+                                "200": {"description": "搜尋成功"},
+                                "500": {"description": "伺服器錯誤"}
+                            }
+                        }
+                    },
+                    "/random": {
+                        "get": {
+                            "tags": ["搜尋"],
+                            "summary": "獲取隨機美甲作品",
+                            "description": "隨機獲取美甲作品，用於推薦展示",
+                            "parameters": [
+                                {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10}, "description": "返回結果數量限制"}
+                            ],
+                            "responses": {
+                                "200": {"description": "獲取成功"},
+                                "500": {"description": "伺服器錯誤"}
+                            }
+                        }
+                    },
+                    "/search-artists": {
+                        "get": {
+                            "tags": ["搜尋"],
+                            "summary": "搜尋美甲師",
+                            "description": "根據多種條件搜尋美甲師，支援工作室名稱、城市、區域、價格範圍、評分等篩選",
+                            "parameters": [
+                                {"name": "artistname", "in": "query", "schema": {"type": "string"}, "description": "美甲師名稱搜尋"},
+                                {"name": "studioName", "in": "query", "schema": {"type": "string"}, "description": "工作室名稱搜尋"},
+                                {"name": "name", "in": "query", "schema": {"type": "string"}, "description": "美甲師/工作室名稱搜尋"},
+                                {"name": "city", "in": "query", "schema": {"type": "string"}, "description": "城市篩選"},
+                                {"name": "district", "in": "query", "schema": {"type": "array", "items": {"type": "string"}}, "description": "區域篩選"},
+                                {"name": "priceMin", "in": "query", "schema": {"type": "number"}, "description": "最低價格篩選"},
+                                {"name": "priceMax", "in": "query", "schema": {"type": "number"}, "description": "最高價格篩選"},
+                                {"name": "rating", "in": "query", "schema": {"type": "number", "minimum": 0, "maximum": 5}, "description": "最低評分篩選"},
+                                {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}, "description": "返回結果數量限制"}
+                            ],
+                            "responses": {
+                                "200": {"description": "搜尋成功"},
+                                "500": {"description": "伺服器錯誤"}
+                            }
+                        }
+                    },
+                    "/search-by-image": {
+                        "post": {
+                            "tags": ["以圖搜圖"],
+                            "summary": "以圖搜圖美甲作品",
+                            "description": "上傳美甲圖片，使用 AI 分析圖片內容並搜尋相似的美甲作品。系統會自動識別圖片中的美甲風格、顏色、質感等特徵，然後返回相似度最高的作品列表。",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "multipart/form-data": {
+                                        "schema": {
+                                            "type": "object",
+                                            "required": ["image"],
+                                            "properties": {
+                                                "image": {
+                                                    "type": "string",
+                                                    "format": "binary",
+                                                    "description": "美甲圖片文件（支援 JPG, JPEG, PNG 格式）"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "parameters": [
+                                {
+                                    "name": "limit",
+                                    "in": "query",
+                                    "schema": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 50,
+                                        "default": 20
+                                    },
+                                    "description": "返回結果數量限制"
+                                }
+                            ],
+                            "responses": {
+                                "200": {
+                                    "description": "搜尋成功",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "success": {
+                                                        "type": "boolean",
+                                                        "description": "是否搜尋成功"
+                                                    },
+                                                    "count": {
+                                                        "type": "integer",
+                                                        "description": "搜尋結果數量"
+                                                    },
+                                                    "analyzedTags": {
+                                                        "type": "object",
+                                                        "description": "AI 分析上傳圖片得出的標籤",
+                                                        "properties": {
+                                                            "style": {"type": "array", "items": {"type": "string"}},
+                                                            "color": {"type": "array", "items": {"type": "string"}},
+                                                            "texture": {"type": "array", "items": {"type": "string"}},
+                                                            "theme": {"type": "array", "items": {"type": "string"}},
+                                                            "decorations": {"type": "array", "items": {"type": "string"}}
+                                                        }
+                                                    },
+                                                    "results": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "id": {"type": "string"},
+                                                                "imageUrl": {"type": "string"},
+                                                                "similarity": {"type": "number", "description": "相似度分數 (0-1)"},
+                                                                "artist": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "studioName": {"type": "string"},
+                                                                        "rating": {"type": "number"},
+                                                                        "priceMin": {"type": "number"},
+                                                                        "priceMax": {"type": "number"}
+                                                                    }
+                                                                },
+                                                                "nailAttributes": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "style": {"type": "array", "items": {"type": "string"}},
+                                                                        "color": {"type": "array", "items": {"type": "string"}},
+                                                                        "texture": {"type": "array", "items": {"type": "string"}},
+                                                                        "theme": {"type": "array", "items": {"type": "string"}},
+                                                                        "decorations": {"type": "array", "items": {"type": "string"}}
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {"description": "請求參數錯誤（如：未上傳圖片）"},
+                                "500": {"description": "圖片分析失敗或伺服器錯誤"}
+                            }
+                        }
                     }
                 },
                 "tags": [
@@ -465,7 +619,8 @@
                     {"name": "營業時間管理", "description": "美甲師營業時間和可預約時段管理"},
                     {"name": "預約管理", "description": "預約創建、查詢和狀態管理"},
                     {"name": "美甲標註", "description": "美甲圖片 AI 標註相關操作"},
-                    {"name": "搜尋", "description": "美甲作品搜尋和篩選功能"}
+                    {"name": "搜尋", "description": "美甲作品智能搜尋和篩選"},
+                    {"name": "以圖搜圖", "description": "上傳圖片搜尋相似美甲作品功能"}
                 ]
             };
 
